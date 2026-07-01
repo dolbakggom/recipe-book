@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createRecipe, deleteRecipe, updateRecipe } from "./data";
+import {
+  createRecipe,
+  deleteRecipe,
+  getRecipeDetail,
+  updateRecipe
+} from "./data";
 import { formFile, formValue, orderedValues } from "@/lib/form";
 import { paths } from "@/lib/paths";
 import { saveUpload } from "@/lib/uploads";
@@ -20,9 +25,11 @@ export async function updateRecipeAction(
   formData: FormData
 ) {
   const imagePath = await saveUpload(formFile(formData, "coverImage"));
+  const coverImage =
+    imagePath ?? (await getRecipeDetail(recipeId))?.coverImage ?? null;
   const recipe = await updateRecipe(
     recipeId,
-    buildRecipeInput(formData, imagePath)
+    buildRecipeInput(formData, coverImage)
   );
 
   revalidatePath(paths.recipe(recipe.kitchenId, recipe.id));
@@ -42,13 +49,12 @@ function buildRecipeInput(formData: FormData, imagePath: string | null) {
   const notes = orderedValues(formData, "note");
   const stepTitles = orderedValues(formData, "stepTitle");
   const stepDescriptions = orderedValues(formData, "stepDescription");
-  const existingCoverImage = formValue(formData, "existingCoverImage").trim();
 
   return {
     kitchenId: formValue(formData, "kitchenId"),
     title: formValue(formData, "title"),
     description: formValue(formData, "description"),
-    coverImage: imagePath ?? (existingCoverImage || null),
+    coverImage: imagePath,
     markdownContent: formValue(formData, "markdownContent"),
     ingredients: ingredientIds
       .map((ingredientId, index) => ({

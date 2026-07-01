@@ -5,6 +5,9 @@ import { prisma } from "@/lib/db";
 type Db = PrismaClient;
 type Tx = Prisma.TransactionClient;
 
+const localUploadPathPattern =
+  /^\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif)$/;
+
 const recipeIngredientInputSchema = z.object({
   ingredientId: z.string().trim().min(1, "Ingredient is required"),
   amount: z.string().trim().optional().default(""),
@@ -23,7 +26,16 @@ const recipeInputSchema = z.object({
   kitchenId: z.string().trim().min(1, "Kitchen is required"),
   title: z.string().trim().min(1, "Recipe title is required"),
   description: z.string().trim().optional().default(""),
-  coverImage: z.string().trim().optional().nullable(),
+  coverImage: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .refine(
+      (coverImage) =>
+        !coverImage || localUploadPathPattern.test(coverImage),
+      "Recipe cover image must be a local upload path"
+    ),
   markdownContent: z.string().trim().optional().default(""),
   ingredients: z.array(recipeIngredientInputSchema).optional().default([]),
   steps: z.array(recipeStepInputSchema).optional().default([])

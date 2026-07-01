@@ -284,4 +284,82 @@ describe("recipe data", () => {
       ]);
     });
   });
+
+  it("rejects creating a recipe with a non-local-upload cover image", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Image Kitchen" }, db);
+
+      await expect(
+        createRecipe(
+          {
+            kitchenId: kitchen.id,
+            title: "Unsafe Image",
+            coverImage: "https://example.com/bad.png"
+          },
+          db
+        )
+      ).rejects.toThrow("Recipe cover image must be a local upload path");
+    });
+  });
+
+  it("rejects updating to an invalid cover image and preserves existing data", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Image Update Kitchen" }, db);
+      const salt = await createIngredient(
+        {
+          kitchenId: kitchen.id,
+          name: "Salt"
+        },
+        db
+      );
+      const recipe = await createRecipe(
+        {
+          kitchenId: kitchen.id,
+          title: "Valid Image",
+          coverImage: "/uploads/123e4567-e89b-12d3-a456-426614174000.png",
+          ingredients: [
+            {
+              ingredientId: salt.id,
+              amount: "1",
+              unit: "tsp",
+              note: "keep",
+              order: 1
+            }
+          ],
+          steps: [
+            {
+              title: "Season",
+              description: "Season to taste.",
+              order: 1
+            }
+          ]
+        },
+        db
+      );
+
+      await expect(
+        updateRecipe(
+          recipe.id,
+          {
+            kitchenId: kitchen.id,
+            title: "Invalid Image",
+            coverImage: "javascript:alert(1)",
+            ingredients: [],
+            steps: []
+          },
+          db
+        )
+      ).rejects.toThrow("Recipe cover image must be a local upload path");
+
+      const detail = await getRecipeDetail(recipe.id, db);
+      expect(detail?.coverImage).toBe(
+        "/uploads/123e4567-e89b-12d3-a456-426614174000.png"
+      );
+      expect(detail?.title).toBe("Valid Image");
+      expect(detail?.recipeIngredients.map((item) => item.ingredient.name)).toEqual([
+        "Salt"
+      ]);
+      expect(detail?.steps.map((step) => step.title)).toEqual(["Season"]);
+    });
+  });
 });
