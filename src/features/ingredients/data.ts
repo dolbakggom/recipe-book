@@ -64,6 +64,21 @@ export async function updateIngredient(
   db: Db = prisma
 ) {
   const parsed = ingredientInputSchema.parse(input);
+  const existing = await db.ingredient.findUnique({
+    where: { id },
+    select: { kitchenId: true }
+  });
+
+  if (existing && existing.kitchenId !== parsed.kitchenId) {
+    const recipeIngredientCount = await db.recipeIngredient.count({
+      where: { ingredientId: id }
+    });
+
+    if (recipeIngredientCount > 0) {
+      throw new Error("Ingredient kitchen cannot change while used by recipes");
+    }
+  }
+
   return db.ingredient.update({
     where: { id },
     data: parsed
@@ -71,6 +86,14 @@ export async function updateIngredient(
 }
 
 export async function deleteIngredient(id: string, db: Db = prisma) {
+  const recipeIngredientCount = await db.recipeIngredient.count({
+    where: { ingredientId: id }
+  });
+
+  if (recipeIngredientCount > 0) {
+    throw new Error("Ingredient is used by recipes");
+  }
+
   return db.ingredient.delete({
     where: { id }
   });

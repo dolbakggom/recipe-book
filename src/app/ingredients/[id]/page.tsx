@@ -38,21 +38,30 @@ export default async function IngredientDetailPage({
         </article>
 
         <section className="grid">
-          {ingredient.recipeIngredients.map((item) => (
-            <Link
-              className="card"
-              href={paths.recipe(item.recipe.kitchenId, item.recipe.id)}
-              key={item.id}
-            >
-              <h2>{item.recipe.title}</h2>
+          {ingredient.recipeIngredients.length === 0 ? (
+            <article className="card">
+              <h2>연결된 레시피가 없습니다</h2>
               <p className="muted">
-                {item.recipe.description || item.recipe.kitchen.name}
+                이 재료를 사용하는 레시피가 생기면 여기에 표시됩니다.
               </p>
-              <span className="tag">
-                {[item.amount, item.unit].filter(Boolean).join(" ") || "수량 없음"}
-              </span>
-            </Link>
-          ))}
+            </article>
+          ) : (
+            ingredient.recipeIngredients.map((item) => (
+              <Link
+                className="card"
+                href={paths.recipe(item.recipe.kitchenId, item.recipe.id)}
+                key={item.id}
+              >
+                <h2>{item.recipe.title}</h2>
+                <p className="muted">
+                  {item.recipe.description || item.recipe.kitchen.name}
+                </p>
+                <span className="tag">
+                  {[item.amount, item.unit].filter(Boolean).join(" ") || "수량 없음"}
+                </span>
+              </Link>
+            ))
+          )}
         </section>
       </section>
     </>

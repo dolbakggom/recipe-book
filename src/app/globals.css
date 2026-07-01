@@ -223,6 +223,11 @@ select {
   gap: 14px;
 }
 
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
 @media (min-width: 980px) {
   .split {
     grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
