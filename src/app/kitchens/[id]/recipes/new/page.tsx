@@ -43,7 +43,7 @@ export default async function NewRecipePage({ params }: NewRecipePageProps) {
         </div>
       </section>
 
-      <form action={createRecipeAction} className="form" encType="multipart/form-data">
+      <form action={createRecipeAction} className="form">
         <input name="kitchenId" type="hidden" value={kitchen.id} />
         <ImageField />
 

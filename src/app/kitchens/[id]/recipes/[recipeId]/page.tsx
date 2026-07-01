@@ -81,7 +81,7 @@ export default async function RecipeDetailPage({
       </section>
 
       <section className="split">
-        <form action={updateAction} className="form" encType="multipart/form-data">
+        <form action={updateAction} className="form">
           <h2>Edit Recipe</h2>
           <input name="kitchenId" type="hidden" value={id} />
           <input
