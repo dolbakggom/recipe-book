@@ -8,6 +8,7 @@ import {
   deleteRecipeAction,
   updateRecipeAction
 } from "@/features/recipes/actions";
+import { createRecipeShareAction } from "@/features/shares/actions";
 import { getRecipeDetail } from "@/features/recipes/data";
 import { listIngredients } from "@/features/ingredients/data";
 import { paths } from "@/lib/paths";
@@ -43,6 +44,7 @@ export default async function RecipeDetailPage({
   const ingredients = await listIngredients({ kitchenId: id });
   const updateAction = updateRecipeAction.bind(null, recipe.id);
   const deleteAction = deleteRecipeAction.bind(null, recipe.id, id);
+  const shareAction = createRecipeShareAction.bind(null, recipe.id);
   const ingredientRows = padRows(
     recipe.recipeIngredients.map((item) => ({
       ingredientId: item.ingredientId,
@@ -187,6 +189,12 @@ export default async function RecipeDetailPage({
             <h2>Markdown Preview</h2>
             <MarkdownPreview content={recipe.markdownContent} />
           </section>
+
+          <form action={shareAction} className="form">
+            <button className="button secondary" type="submit">
+              공유 링크 만들기
+            </button>
+          </form>
 
           <form action={deleteAction} className="form">
             <h2>Delete Recipe</h2>

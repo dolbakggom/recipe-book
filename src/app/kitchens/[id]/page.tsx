@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { createKitchenShareAction } from "@/features/shares/actions";
 import { getKitchen } from "@/features/kitchens/data";
 import { paths } from "@/lib/paths";
 
@@ -17,6 +18,8 @@ export default async function KitchenPage({ params }: KitchenPageProps) {
     notFound();
   }
 
+  const shareAction = createKitchenShareAction.bind(null, kitchen.id);
+
   return (
     <>
       <section className="page-header">
@@ -31,6 +34,11 @@ export default async function KitchenPage({ params }: KitchenPageProps) {
           <Link href={paths.ingredients(kitchen.id)} className="button secondary">
             Ingredients
           </Link>
+          <form action={shareAction}>
+            <button className="button secondary" type="submit">
+              공유 링크 만들기
+            </button>
+          </form>
         </div>
       </section>
 
