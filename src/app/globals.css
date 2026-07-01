@@ -234,3 +234,40 @@ select {
     align-items: start;
   }
 }
+
+.markdown {
+  display: grid;
+  gap: 10px;
+  line-height: 1.65;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 14px 0 4px;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 22px;
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-x: auto;
+}
+
+.markdown th,
+.markdown td {
+  padding: 8px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.markdown blockquote {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 4px solid var(--accent);
+  color: var(--muted);
+}
