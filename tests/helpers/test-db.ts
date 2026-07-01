@@ -11,31 +11,34 @@ export async function withTestDb<T>(
   const dbPath = path.join(dir, "test.db");
   const databaseUrl = `file:${dbPath}`;
   const previousUrl = process.env.DATABASE_URL;
-
-  process.env.DATABASE_URL = databaseUrl;
-  closeSync(openSync(dbPath, "a"));
-  execFileSync("npx", ["prisma", "db", "push", "--skip-generate"], {
-    env: { ...process.env, DATABASE_URL: databaseUrl },
-    stdio: "ignore"
-  });
-
-  const db = new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl
-      }
-    }
-  });
+  let db: PrismaClient | undefined;
 
   try {
+    process.env.DATABASE_URL = databaseUrl;
+    closeSync(openSync(dbPath, "a"));
+    execFileSync("npx", ["prisma", "db", "push", "--skip-generate"], {
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+      stdio: "ignore"
+    });
+
+    db = new PrismaClient({
+      datasources: {
+        db: {
+          url: databaseUrl
+        }
+      }
+    });
+
     return await run(db);
   } finally {
-    await db.$disconnect();
+    await db?.$disconnect();
+
     if (previousUrl === undefined) {
       delete process.env.DATABASE_URL;
     } else {
       process.env.DATABASE_URL = previousUrl;
     }
+
     rmSync(dir, { recursive: true, force: true });
   }
 }

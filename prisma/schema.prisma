@@ -83,7 +83,7 @@ model RecipeIngredient {
   note         String     @default("")
   order        Int        @default(0)
   recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
 
   @@unique([recipeId, ingredientId])
   @@index([ingredientId])
