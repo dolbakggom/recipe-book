@@ -58,4 +58,25 @@ describe("kitchen data", () => {
       ).rejects.toThrow("Kitchen name is required");
     });
   });
+
+  it("preserves omitted fields when partially updating a kitchen", async () => {
+    await withTestDb(async (db) => {
+      const created = await createKitchen(
+        {
+          name: "OO식당 Kitchen",
+          description: "매장용 레시피북",
+          type: "STORE",
+          visibility: "SHARED"
+        },
+        db
+      );
+
+      const updated = await updateKitchen(created.id, { name: "Renamed" }, db);
+
+      expect(updated.name).toBe("Renamed");
+      expect(updated.description).toBe("매장용 레시피북");
+      expect(updated.type).toBe("STORE");
+      expect(updated.visibility).toBe("SHARED");
+    });
+  });
 });
