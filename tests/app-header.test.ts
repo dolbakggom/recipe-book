@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { shouldShowAppNavigation } from "@/components/AppHeader";
+import {
+  APP_NAVIGATION_ITEMS,
+  shouldShowAppNavigation
+} from "@/components/AppHeader";
 
 describe("app header navigation visibility", () => {
   it("hides navigation on shared routes", () => {
@@ -10,5 +13,14 @@ describe("app header navigation visibility", () => {
   it("shows navigation on normal app routes", () => {
     expect(shouldShowAppNavigation("/kitchens")).toBe(true);
     expect(shouldShowAppNavigation("/ingredients")).toBe(true);
+  });
+
+  it("keeps top-level navigation minimal and Korean", () => {
+    expect(APP_NAVIGATION_ITEMS).toEqual([
+      {
+        href: "/kitchens",
+        label: "주방"
+      }
+    ]);
   });
 });

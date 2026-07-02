@@ -3,7 +3,7 @@ import remarkGfm from "remark-gfm";
 
 export function MarkdownPreview({ content }: { content: string }) {
   if (!content.trim()) {
-    return <p className="muted">Markdown 내용이 없습니다.</p>;
+    return <p className="muted">문서 내용이 없습니다.</p>;
   }
 
   return (
