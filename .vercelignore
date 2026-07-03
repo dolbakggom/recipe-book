@@ -1,0 +1,10 @@
+.env
+.env.*
+.vercel/
+tmp/
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
+public/uploads/*
+!public/uploads/.gitkeep
