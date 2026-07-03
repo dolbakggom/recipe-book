@@ -16,3 +16,4 @@ test-results/
 playwright-report/
 public/uploads/*
 !public/uploads/.gitkeep
+.vercel/
