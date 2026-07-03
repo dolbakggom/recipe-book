@@ -73,4 +73,25 @@ describe("AI recipe form input", () => {
       expect(ingredientCount).toBe(1);
     });
   });
+
+  it("ignores retired manual ingredient and step fields", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Retired Manual Kitchen" }, db);
+      const salt = await createIngredient({ kitchenId: kitchen.id, name: "소금" }, db);
+      const formData = new FormData();
+
+      formData.set("kitchenId", kitchen.id);
+      formData.set("title", "수동 필드 무시");
+      formData.append("ingredientId", salt.id);
+      formData.append("amount", "1");
+      formData.append("unit", "꼬집");
+      formData.append("stepTitle", "간 맞추기");
+      formData.append("stepDescription", "소금을 넣는다.");
+
+      const input = await recipeInputFromFormData(formData, null, db);
+
+      expect(input.ingredients).toEqual([]);
+      expect(input.steps).toEqual([]);
+    });
+  });
 });

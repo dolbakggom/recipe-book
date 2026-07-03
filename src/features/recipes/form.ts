@@ -23,17 +23,19 @@ export async function recipeInputFromFormData(
   db: Db = prisma
 ): Promise<RecipeInput> {
   const kitchenId = formValue(formData, "kitchenId");
-  const aiResultActive = hasAiRecipeResult(formData);
-  const ingredients = aiResultActive
-    ? await aiIngredientRowsFromFormData(formData, kitchenId, db)
-    : manualIngredientRowsFromFormData(formData);
-  const steps = aiResultActive
-    ? aiStepRowsFromFormData(formData)
-    : manualStepRowsFromFormData(formData);
+  const ingredients = await aiIngredientRowsFromFormData(
+    formData,
+    kitchenId,
+    db
+  );
+  const steps = aiStepRowsFromFormData(formData);
 
   return {
     kitchenId,
-    title: firstFilled(formValue(formData, "title"), formValue(formData, "aiTitle")),
+    title: firstFilled(
+      formValue(formData, "title"),
+      formValue(formData, "aiTitle")
+    ),
     description: firstFilled(
       formValue(formData, "description"),
       formValue(formData, "aiDescription")
@@ -54,31 +56,6 @@ export async function recipeInputFromFormData(
         order: index + 1
       }))
   };
-}
-
-function hasAiRecipeResult(formData: FormData) {
-  return (
-    formValue(formData, "aiResultActive") === "1" ||
-    orderedValues(formData, "aiIngredientName").some((name) => name.trim()) ||
-    orderedValues(formData, "aiStepTitle").some((title) => title.trim()) ||
-    Boolean(formValue(formData, "aiMarkdownContent").trim())
-  );
-}
-
-function manualIngredientRowsFromFormData(formData: FormData): IngredientRow[] {
-  const ingredientIds = orderedValues(formData, "ingredientId");
-  const amounts = orderedValues(formData, "amount");
-  const units = orderedValues(formData, "unit");
-  const notes = orderedValues(formData, "note");
-
-  return ingredientIds
-    .map((ingredientId, index) => ({
-      ingredientId: ingredientId.trim(),
-      amount: valueAt(amounts, index),
-      unit: valueAt(units, index),
-      note: valueAt(notes, index)
-    }))
-    .filter((ingredient) => ingredient.ingredientId);
 }
 
 async function aiIngredientRowsFromFormData(
@@ -122,16 +99,6 @@ async function aiIngredientRowsFromFormData(
   }
 
   return rows;
-}
-
-function manualStepRowsFromFormData(formData: FormData): StepRow[] {
-  const titles = orderedValues(formData, "stepTitle");
-  const descriptions = orderedValues(formData, "stepDescription");
-
-  return titles.map((title, index) => ({
-    title,
-    description: valueAt(descriptions, index)
-  }));
 }
 
 function aiStepRowsFromFormData(formData: FormData): StepRow[] {

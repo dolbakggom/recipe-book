@@ -12,7 +12,11 @@ describe("app header navigation visibility", () => {
 
   it("shows navigation on normal app routes", () => {
     expect(shouldShowAppNavigation("/kitchens")).toBe(true);
-    expect(shouldShowAppNavigation("/ingredients")).toBe(true);
+  });
+
+  it("hides navigation on retired ingredient routes", () => {
+    expect(shouldShowAppNavigation("/ingredients")).toBe(false);
+    expect(shouldShowAppNavigation("/ingredients/abc")).toBe(false);
   });
 
   it("keeps top-level navigation minimal and Korean", () => {

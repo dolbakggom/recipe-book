@@ -1,7 +1,7 @@
 "use server";
 
 import type { AiRecipeSuggestion } from "./recipe";
-import { analyzeRecipeDraft, summarizeRecipeDraft } from "./recipe";
+import { summarizeRecipeDraft } from "./recipe";
 
 export type AiRecipeActionResult =
   | {
@@ -12,12 +12,6 @@ export type AiRecipeActionResult =
       ok: false;
       error: string;
     };
-
-export async function analyzeRecipeDraftAction(
-  rawText: string
-): Promise<AiRecipeActionResult> {
-  return runAiRecipeAction(() => analyzeRecipeDraft(rawText));
-}
 
 export async function summarizeRecipeDraftAction(
   rawText: string

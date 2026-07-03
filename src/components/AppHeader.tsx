@@ -11,7 +11,12 @@ export const APP_NAVIGATION_ITEMS = [
 ];
 
 export function shouldShowAppNavigation(pathname: string) {
-  return pathname !== "/shared" && !pathname.startsWith("/shared/");
+  return (
+    pathname !== "/shared" &&
+    !pathname.startsWith("/shared/") &&
+    pathname !== "/ingredients" &&
+    !pathname.startsWith("/ingredients/")
+  );
 }
 
 export function AppHeader() {

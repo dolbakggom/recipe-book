@@ -62,25 +62,18 @@ const recipeResponseSchema = {
   required: ["title", "description", "ingredients", "steps", "markdownContent"]
 };
 
-export async function analyzeRecipeDraft(rawText: string) {
-  return generateRecipeSuggestion(rawText, "extract");
-}
-
 export async function summarizeRecipeDraft(rawText: string) {
-  return generateRecipeSuggestion(rawText, "summarize");
+  return generateRecipeSuggestion(rawText);
 }
 
-async function generateRecipeSuggestion(
-  rawText: string,
-  mode: "extract" | "summarize"
-): Promise<AiRecipeSuggestion> {
+async function generateRecipeSuggestion(rawText: string): Promise<AiRecipeSuggestion> {
   const text = rawText.trim();
 
   if (text.length < 10) {
     throw new Error("레시피 내용을 조금 더 입력해 주세요.");
   }
 
-  const response = await callGeminiJson(buildPrompt(text, mode));
+  const response = await callGeminiJson(buildPrompt(text));
   return normalizeSuggestion(response);
 }
 
@@ -130,17 +123,12 @@ async function callGeminiJson(prompt: string) {
   return JSON.parse(stripJsonFence(text)) as unknown;
 }
 
-function buildPrompt(rawText: string, mode: "extract" | "summarize") {
-  const task =
-    mode === "extract"
-      ? "사용자가 자유롭게 작성한 레시피에서 재료와 조리 순서를 정확히 추출하세요."
-      : "사용자가 자유롭게 작성한 레시피를 재료, 조리 순서, 조리 팁이 보이는 깔끔한 마크다운 레시피로 요약하세요.";
-
+function buildPrompt(rawText: string) {
   return `
 당신은 한국어 레시피를 정리하는 요리 보조 AI입니다.
 
 작업:
-${task}
+사용자가 자유롭게 작성한 레시피를 재료, 조리 순서, 조리 팁이 보이는 깔끔한 마크다운 레시피로 요약하세요.
 
 규칙:
 - 사용자가 쓴 내용에 근거해서만 추출하고, 확실하지 않은 수량은 빈 문자열로 둡니다.
