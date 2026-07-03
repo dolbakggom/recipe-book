@@ -7,6 +7,8 @@ import { ingredientSummariesFromRecipe } from "@/features/recipes/document";
 import { paths } from "@/lib/paths";
 import { BookOpen, Layers } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 type SharedPageProps = {
   params: Promise<{ shareId: string }>;
 };

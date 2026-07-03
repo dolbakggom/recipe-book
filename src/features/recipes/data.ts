@@ -1,12 +1,13 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { z } from "zod";
+import {
+  coverImageErrorMessage,
+  isSavedCoverImageUrl
+} from "@/lib/cover-image";
 import { prisma } from "@/lib/db";
 
 type Db = PrismaClient;
 type Tx = Prisma.TransactionClient;
-
-const localUploadPathPattern =
-  /^\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif)$/;
 
 const recipeIngredientInputSchema = z.object({
   ingredientId: z.string().trim().min(1, "Ingredient is required"),
@@ -31,11 +32,7 @@ const recipeInputSchema = z.object({
     .trim()
     .optional()
     .nullable()
-    .refine(
-      (coverImage) =>
-        !coverImage || localUploadPathPattern.test(coverImage),
-      "Recipe cover image must be a local upload path"
-    ),
+    .refine(isSavedCoverImageUrl, coverImageErrorMessage),
   markdownContent: z.string().trim().optional().default(""),
   ingredients: z.array(recipeIngredientInputSchema).optional().default([]),
   steps: z.array(recipeStepInputSchema).optional().default([])

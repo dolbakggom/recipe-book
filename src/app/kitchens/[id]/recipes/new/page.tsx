@@ -8,6 +8,8 @@ import { createRecipeAction } from "@/features/recipes/actions";
 import { getKitchen } from "@/features/kitchens/data";
 import { paths } from "@/lib/paths";
 
+export const dynamic = "force-dynamic";
+
 type NewRecipePageProps = {
   params: Promise<{ id: string }>;
 };

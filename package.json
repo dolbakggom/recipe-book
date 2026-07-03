@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "prisma generate --schema=prisma/schema.postgres.prisma && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -12,12 +13,18 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
+    "prisma:generate:prod": "prisma generate --schema=prisma/schema.postgres.prisma",
     "prisma:push": "node scripts/ensure-sqlite-db.mjs && prisma db push",
+    "prisma:push:prod": "prisma db push --schema=prisma/schema.postgres.prisma",
     "prisma:seed": "node --import tsx prisma/seed.ts",
+    "data:export": "node scripts/export-sqlite-data.mjs",
+    "data:import:prod": "prisma generate --schema=prisma/schema.postgres.prisma && tsx scripts/import-data.ts",
+    "uploads:migrate": "tsx scripts/upload-local-uploads.ts",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@vercel/blob": "^2.5.0",
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "latest",

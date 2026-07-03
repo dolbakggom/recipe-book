@@ -17,6 +17,8 @@ import { paths } from "@/lib/paths";
 import { prisma } from "@/lib/db";
 import { ArrowLeft, BookOpen, Trash2 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 type RecipeDetailPageProps = {
   params: Promise<{ id: string; recipeId: string }>;
 };

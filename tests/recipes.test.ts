@@ -285,7 +285,27 @@ describe("recipe data", () => {
     });
   });
 
-  it("rejects creating a recipe with a non-local-upload cover image", async () => {
+  it("accepts a Vercel Blob recipe cover image", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Image Kitchen" }, db);
+
+      const recipe = await createRecipe(
+        {
+          kitchenId: kitchen.id,
+          title: "Cloud Image",
+          coverImage:
+            "https://abc123.public.blob.vercel-storage.com/uploads/cover.png"
+        },
+        db
+      );
+
+      expect(recipe.coverImage).toBe(
+        "https://abc123.public.blob.vercel-storage.com/uploads/cover.png"
+      );
+    });
+  });
+
+  it("rejects creating a recipe with an unsupported cover image URL", async () => {
     await withTestDb(async (db) => {
       const kitchen = await createKitchen({ name: "Image Kitchen" }, db);
 
@@ -298,7 +318,7 @@ describe("recipe data", () => {
           },
           db
         )
-      ).rejects.toThrow("Recipe cover image must be a local upload path");
+      ).rejects.toThrow("Cover image must be a saved upload URL");
     });
   });
 
@@ -349,7 +369,7 @@ describe("recipe data", () => {
           },
           db
         )
-      ).rejects.toThrow("Recipe cover image must be a local upload path");
+      ).rejects.toThrow("Cover image must be a saved upload URL");
 
       const detail = await getRecipeDetail(recipe.id, db);
       expect(detail?.coverImage).toBe(

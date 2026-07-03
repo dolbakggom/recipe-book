@@ -5,14 +5,25 @@ import type {
   Visibility
 } from "@prisma/client";
 import { z } from "zod";
+import {
+  coverImageErrorMessage,
+  isSavedCoverImageUrl
+} from "@/lib/cover-image";
 import { prisma } from "@/lib/db";
 
 type Db = PrismaClient;
 
+const coverImageSchema = z
+  .string()
+  .trim()
+  .optional()
+  .nullable()
+  .refine(isSavedCoverImageUrl, coverImageErrorMessage);
+
 const kitchenInputSchema = z.object({
   name: z.string().trim().min(1, "Kitchen name is required"),
   description: z.string().trim().optional().default(""),
-  coverImage: z.string().trim().optional().nullable(),
+  coverImage: coverImageSchema,
   type: z.enum(["PERSONAL", "STORE"]).default("PERSONAL"),
   visibility: z.enum(["PRIVATE", "SHARED"]).default("PRIVATE")
 });
@@ -20,7 +31,7 @@ const kitchenInputSchema = z.object({
 const kitchenUpdateInputSchema = z.object({
   name: z.string().trim().min(1, "Kitchen name is required").optional(),
   description: z.string().trim().optional(),
-  coverImage: z.string().trim().optional().nullable(),
+  coverImage: coverImageSchema,
   type: z.enum(["PERSONAL", "STORE"]).optional(),
   visibility: z.enum(["PRIVATE", "SHARED"]).optional()
 });

@@ -5,6 +5,7 @@ node_modules/
 dist/
 coverage/
 tsconfig.tsbuildinfo
+tmp/
 .env
 .env.local
 prisma/*.db

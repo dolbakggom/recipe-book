@@ -4,6 +4,8 @@ import { createKitchenAction } from "@/features/kitchens/actions";
 import { listKitchens } from "@/features/kitchens/data";
 import { paths } from "@/lib/paths";
 
+export const dynamic = "force-dynamic";
+
 function getGradientFromId(id: string) {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {

@@ -18,6 +18,17 @@ export async function saveUpload(file: File | null): Promise<string | null> {
 
   const extension = extensionFor(file.type);
   const filename = `${randomUUID()}${extension}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const { put } = await import("@vercel/blob");
+    const blob = await put(`uploads/${filename}`, file, {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+
+    return blob.url;
+  }
+
   const bytes = Buffer.from(await file.arrayBuffer());
 
   await writeFile(path.join(uploadDir, filename), bytes);

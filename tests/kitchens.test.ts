@@ -79,4 +79,31 @@ describe("kitchen data", () => {
       expect(updated.visibility).toBe("SHARED");
     });
   });
+
+  it("accepts saved upload URLs and rejects unsupported kitchen cover images", async () => {
+    await withTestDb(async (db) => {
+      const created = await createKitchen(
+        {
+          name: "이미지 주방",
+          coverImage:
+            "https://abc123.public.blob.vercel-storage.com/uploads/kitchen.webp"
+        },
+        db
+      );
+
+      expect(created.coverImage).toBe(
+        "https://abc123.public.blob.vercel-storage.com/uploads/kitchen.webp"
+      );
+
+      await expect(
+        updateKitchen(
+          created.id,
+          {
+            coverImage: "javascript:alert(1)"
+          },
+          db
+        )
+      ).rejects.toThrow("Cover image must be a saved upload URL");
+    });
+  });
 });
