@@ -1,9 +1,12 @@
-import { Plus, Share2, ArrowLeft } from "lucide-react";
+import { Plus, Share2, ArrowLeft, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConfirmSubmitButton } from "@/components/ui/ConfirmSubmitButton";
+import { deleteKitchenAction } from "@/features/kitchens/actions";
 import { createKitchenShareAction } from "@/features/shares/actions";
-import { getKitchen } from "@/features/kitchens/data";
+import { getKitchenForOwner } from "@/features/kitchens/data";
+import { getCurrentOwnerTokenHash } from "@/features/owners/server";
 import { paths } from "@/lib/paths";
 
 export const dynamic = "force-dynamic";
@@ -24,13 +27,15 @@ function getGradientFromId(id: string) {
 
 export default async function KitchenPage({ params }: KitchenPageProps) {
   const { id } = await params;
-  const kitchen = await getKitchen(id);
+  const ownerTokenHash = await getCurrentOwnerTokenHash();
+  const kitchen = await getKitchenForOwner(id, ownerTokenHash);
 
   if (!kitchen) {
     notFound();
   }
 
   const shareAction = createKitchenShareAction.bind(null, kitchen.id);
+  const deleteAction = deleteKitchenAction.bind(null, kitchen.id);
   const kitchenGradient = getGradientFromId(kitchen.id);
 
   return (
@@ -59,6 +64,12 @@ export default async function KitchenPage({ params }: KitchenPageProps) {
                 <Share2 size={16} aria-hidden="true" />
                 주방 공유 링크 생성
               </button>
+            </form>
+            <form action={deleteAction}>
+              <ConfirmSubmitButton message="이 주방과 모든 레시피를 삭제하시겠습니까?">
+                <Trash2 size={16} style={{ marginRight: "6px" }} />
+                주방 삭제
+              </ConfirmSubmitButton>
             </form>
           </div>
         </div>

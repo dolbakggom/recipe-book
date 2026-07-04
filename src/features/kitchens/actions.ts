@@ -2,7 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createKitchen, deleteKitchen, updateKitchen } from "./data";
+import {
+  assertKitchenAdmin,
+  createKitchen,
+  deleteKitchenForOwner,
+  updateKitchen
+} from "./data";
+import {
+  getCurrentOwnerTokenHash,
+  getOrCreateOwnerTokenHash
+} from "@/features/owners/server";
 import { paths } from "@/lib/paths";
 
 function value(formData: FormData, key: string) {
@@ -10,9 +19,11 @@ function value(formData: FormData, key: string) {
 }
 
 export async function createKitchenAction(formData: FormData) {
+  const ownerTokenHash = await getOrCreateOwnerTokenHash();
   const kitchen = await createKitchen({
     name: value(formData, "name"),
     description: value(formData, "description"),
+    ownerTokenHash,
     type: value(formData, "type") === "STORE" ? "STORE" : "PERSONAL",
     visibility: "PRIVATE"
   });
@@ -21,6 +32,8 @@ export async function createKitchenAction(formData: FormData) {
 }
 
 export async function updateKitchenAction(kitchenId: string, formData: FormData) {
+  const ownerTokenHash = await getCurrentOwnerTokenHash();
+  await assertKitchenAdmin(kitchenId, ownerTokenHash);
   await updateKitchen(kitchenId, {
     name: value(formData, "name"),
     description: value(formData, "description"),
@@ -32,7 +45,8 @@ export async function updateKitchenAction(kitchenId: string, formData: FormData)
 }
 
 export async function deleteKitchenAction(kitchenId: string) {
-  await deleteKitchen(kitchenId);
+  const ownerTokenHash = await getCurrentOwnerTokenHash();
+  await deleteKitchenForOwner(kitchenId, ownerTokenHash);
   revalidatePath(paths.kitchens());
   redirect(paths.kitchens());
 }

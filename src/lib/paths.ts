@@ -4,5 +4,8 @@ export const paths = {
   newRecipe: (kitchenId: string) => `/kitchens/${kitchenId}/recipes/new`,
   recipe: (kitchenId: string, recipeId: string) =>
     `/kitchens/${kitchenId}/recipes/${recipeId}`,
-  shared: (token: string) => `/shared/${token}`
+  shared: (token: string) => `/shared/${token}`,
+  sharedKitchenRecipe: (token: string, recipeId: string) =>
+    `/shared/${token}/recipes/${recipeId}`,
+  newKitchen: () => "/kitchens/new"
 };

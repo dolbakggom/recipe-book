@@ -94,4 +94,61 @@ describe("AI recipe form input", () => {
       expect(input.steps).toEqual([]);
     });
   });
+
+  it("summarizes raw recipe text when final submit happens before the AI preview button", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "One Button Kitchen" }, db);
+      const formData = new FormData();
+
+      formData.set("kitchenId", kitchen.id);
+      formData.set(
+        "rawRecipeText",
+        "팬에 버터를 녹이고 양파를 볶다가 생크림을 넣어 졸인다."
+      );
+
+      const input = await recipeInputFromFormData(
+        formData,
+        null,
+        db,
+        async (rawText) => {
+          expect(rawText).toContain("생크림");
+          return {
+            title: "크림 양파 소스",
+            description: "생크림과 양파로 만드는 간단한 소스",
+            markdownContent:
+              "# 크림 양파 소스\n\n## 재료\n- 생크림 200ml\n- 양파 1개\n\n## 조리 순서\n1. 양파를 볶는다.",
+            ingredients: [
+              {
+                name: "생크림",
+                amount: "200",
+                unit: "ml",
+                note: ""
+              },
+              {
+                name: "양파",
+                amount: "1",
+                unit: "개",
+                note: ""
+              }
+            ],
+            steps: [
+              {
+                title: "소스 만들기",
+                description: "양파를 볶다가 생크림을 넣어 졸인다."
+              }
+            ]
+          };
+        }
+      );
+      const recipe = await createRecipe(input, db);
+      const detail = await getRecipeDetail(recipe.id, db);
+
+      expect(input.title).toBe("크림 양파 소스");
+      expect(detail?.recipeIngredients.map((item) => item.ingredient.name)).toEqual([
+        "생크림",
+        "양파"
+      ]);
+      expect(detail?.steps.map((step) => step.title)).toEqual(["소스 만들기"]);
+    });
+  });
 });

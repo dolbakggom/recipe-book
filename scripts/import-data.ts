@@ -52,6 +52,7 @@ async function main() {
       name: text(kitchen.name),
       description: text(kitchen.description),
       coverImage: remapImage(nullableText(kitchen.coverImage)),
+      ownerTokenHash: nullableText(kitchen.ownerTokenHash),
       type: enumValue(kitchen.type, KitchenType, "PERSONAL"),
       visibility: enumValue(kitchen.visibility, Visibility, "PRIVATE"),
       createdAt: dateValue(kitchen.createdAt),

@@ -27,18 +27,20 @@ enum SharePermission {
 }
 
 model Kitchen {
-  id          String       @id @default(cuid())
-  name        String
-  description String       @default("")
-  coverImage  String?
-  type        KitchenType  @default(PERSONAL)
-  visibility  Visibility   @default(PRIVATE)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  recipes     Recipe[]
-  ingredients Ingredient[]
+  id             String       @id @default(cuid())
+  name           String
+  description    String       @default("")
+  coverImage     String?
+  ownerTokenHash String?
+  type           KitchenType  @default(PERSONAL)
+  visibility     Visibility   @default(PRIVATE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  recipes        Recipe[]
+  ingredients    Ingredient[]
 
   @@index([updatedAt])
+  @@index([ownerTokenHash])
 }
 
 model Recipe {
@@ -91,12 +93,12 @@ model RecipeIngredient {
 }
 
 model RecipeStep {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   recipeId    String
-  title       String   @default("")
-  description String   @default("")
-  order       Int      @default(0)
-  recipe      Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  title       String @default("")
+  description String @default("")
+  order       Int    @default(0)
+  recipe      Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@index([recipeId, order])
 }

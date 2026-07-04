@@ -4,6 +4,7 @@ import { createKitchen } from "@/features/kitchens/data";
 import { createRecipe } from "@/features/recipes/data";
 import {
   createShareLink,
+  resolveSharedKitchenRecipe,
   resolveShareLink
 } from "@/features/shares/data";
 import { withTestDb } from "./helpers/test-db";
@@ -162,6 +163,73 @@ describe("share data", () => {
           (item) => item.ingredient.name
         )
       ).toEqual(["Noodle", "Broth", "Egg", "Scallion"]);
+    });
+  });
+
+  it("resolves a recipe detail through a kitchen share link", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Shared Detail Kitchen" }, db);
+      const cream = await createIngredient(
+        {
+          kitchenId: kitchen.id,
+          name: "생크림"
+        },
+        db
+      );
+      const recipe = await createRecipe(
+        {
+          kitchenId: kitchen.id,
+          title: "크림 파스타",
+          markdownContent: "## 재료\n- 생크림 200ml",
+          ingredients: [
+            {
+              ingredientId: cream.id,
+              amount: "200",
+              unit: "ml",
+              order: 1
+            }
+          ],
+          steps: [
+            {
+              title: "소스 만들기",
+              description: "생크림을 넣어 졸인다.",
+              order: 1
+            }
+          ]
+        },
+        db
+      );
+      const otherKitchen = await createKitchen({ name: "Private Kitchen" }, db);
+      const otherRecipe = await createRecipe(
+        {
+          kitchenId: otherKitchen.id,
+          title: "다른 주방 레시피"
+        },
+        db
+      );
+      const share = await createShareLink(
+        { type: "KITCHEN", targetId: kitchen.id },
+        db
+      );
+
+      const resolved = await resolveSharedKitchenRecipe(
+        share.token,
+        recipe.id,
+        db
+      );
+      const outside = await resolveSharedKitchenRecipe(
+        share.token,
+        otherRecipe.id,
+        db
+      );
+
+      expect(resolved?.expired).toBe(false);
+      expect(resolved?.kitchen?.name).toBe("Shared Detail Kitchen");
+      expect(resolved?.recipe?.title).toBe("크림 파스타");
+      expect(
+        resolved?.recipe?.recipeIngredients.map((item) => item.ingredient.name)
+      ).toEqual(["생크림"]);
+      expect(outside).toBeNull();
     });
   });
 

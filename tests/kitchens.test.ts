@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   createKitchen,
+  deleteKitchenForOwner,
   deleteKitchen,
   listKitchens,
+  listKitchensForOwner,
   updateKitchen
 } from "@/features/kitchens/data";
 import { withTestDb } from "./helpers/test-db";
@@ -77,6 +79,60 @@ describe("kitchen data", () => {
       expect(updated.description).toBe("매장용 레시피북");
       expect(updated.type).toBe("STORE");
       expect(updated.visibility).toBe("SHARED");
+    });
+  });
+
+  it("lists only kitchens owned by the current anonymous admin", async () => {
+    await withTestDb(async (db) => {
+      await createKitchen(
+        {
+          name: "내 주방",
+          ownerTokenHash: "owner-a"
+        },
+        db
+      );
+      await createKitchen(
+        {
+          name: "다른 사람 주방",
+          ownerTokenHash: "owner-b"
+        },
+        db
+      );
+      await createKitchen(
+        {
+          name: "소유자 없는 이전 주방"
+        },
+        db
+      );
+
+      const owned = await listKitchensForOwner("owner-a", db);
+
+      expect(owned.map((kitchen) => kitchen.name)).toEqual(["내 주방"]);
+    });
+  });
+
+  it("deletes a kitchen only when the anonymous admin token matches", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen(
+        {
+          name: "삭제 가능한 주방",
+          ownerTokenHash: "owner-a"
+        },
+        db
+      );
+
+      await expect(
+        deleteKitchenForOwner(kitchen.id, "owner-b", db)
+      ).rejects.toThrow("Kitchen admin permission is required");
+      await expect(
+        db.kitchen.findUnique({ where: { id: kitchen.id } })
+      ).resolves.not.toBeNull();
+
+      await deleteKitchenForOwner(kitchen.id, "owner-a", db);
+
+      await expect(
+        db.kitchen.findUnique({ where: { id: kitchen.id } })
+      ).resolves.toBeNull();
     });
   });
 

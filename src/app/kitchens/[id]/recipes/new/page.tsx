@@ -5,7 +5,8 @@ import { AiRecipeAssistant } from "@/components/AiRecipeAssistant";
 import { ImageField } from "@/components/ImageField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { createRecipeAction } from "@/features/recipes/actions";
-import { getKitchen } from "@/features/kitchens/data";
+import { getKitchenForOwner } from "@/features/kitchens/data";
+import { getCurrentOwnerTokenHash } from "@/features/owners/server";
 import { paths } from "@/lib/paths";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,8 @@ type NewRecipePageProps = {
 
 export default async function NewRecipePage({ params }: NewRecipePageProps) {
   const { id } = await params;
-  const kitchen = await getKitchen(id);
+  const ownerTokenHash = await getCurrentOwnerTokenHash();
+  const kitchen = await getKitchenForOwner(id, ownerTokenHash);
 
   if (!kitchen) {
     notFound();

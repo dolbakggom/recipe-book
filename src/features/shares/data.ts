@@ -64,6 +64,20 @@ export type ShareLinkResolution =
       kitchen: KitchenShare | null;
     };
 
+export type SharedKitchenRecipeResolution =
+  | {
+      share: ShareLink;
+      expired: true;
+      recipe: null;
+      kitchen: null;
+    }
+  | {
+      share: ShareLink;
+      expired: false;
+      recipe: RecipeShare;
+      kitchen: RecipeShare["kitchen"];
+    };
+
 export async function createShareLink(
   input: ShareLinkInput,
   db: Db = prisma
@@ -127,6 +141,48 @@ export async function resolveShareLink(
     expired: false,
     recipe: null,
     kitchen
+  };
+}
+
+export async function resolveSharedKitchenRecipe(
+  token: string,
+  recipeId: string,
+  db: Db = prisma
+): Promise<SharedKitchenRecipeResolution | null> {
+  const share = await db.shareLink.findUnique({
+    where: { token }
+  });
+
+  if (!share || share.type !== "KITCHEN") {
+    return null;
+  }
+
+  if (share.expiresAt && share.expiresAt <= new Date()) {
+    return {
+      share,
+      expired: true,
+      recipe: null,
+      kitchen: null
+    };
+  }
+
+  const recipe = await db.recipe.findFirst({
+    where: {
+      id: recipeId,
+      kitchenId: share.targetId
+    },
+    include: recipeShareInclude
+  });
+
+  if (!recipe) {
+    return null;
+  }
+
+  return {
+    share,
+    expired: false,
+    recipe,
+    kitchen: recipe.kitchen
   };
 }
 

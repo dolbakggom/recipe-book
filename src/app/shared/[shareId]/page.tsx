@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { resolveShareLink } from "@/features/shares/data";
 import { CopyShareLink } from "@/components/CopyShareLink";
@@ -160,10 +161,11 @@ export default async function SharedPage({ params }: SharedPageProps) {
             kitchen.recipes.map((recipe) => {
               const recipeGradient = getGradientFromId(recipe.id);
               return (
-                <article 
+                <Link
                   className="card" 
+                  href={paths.sharedKitchenRecipe(shareId, recipe.id)}
                   key={recipe.id}
-                  style={{ padding: "0", overflow: "hidden", display: "flex", flexDirection: "column", cursor: "default" }}
+                  style={{ padding: "0", overflow: "hidden", display: "flex", flexDirection: "column" }}
                 >
                   {recipe.coverImage ? (
                     <div className="media" style={{ borderRadius: "0", aspectRatio: "16 / 9", border: "none", borderBottom: "1px solid var(--border)", marginBottom: "0" }}>
@@ -200,7 +202,7 @@ export default async function SharedPage({ params }: SharedPageProps) {
                       </div>
                     )}
                   </div>
-                </article>
+                </Link>
               );
             })
           )}

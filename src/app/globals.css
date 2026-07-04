@@ -203,6 +203,33 @@ select {
   gap: 20px;
 }
 
+.home-choice-grid {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 860px) {
+  .home-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+.home-choice-grid > .form {
+  min-height: 320px;
+}
+
+.home-choice-icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
 /* Components: Card, Media, Tags */
 .card {
   display: flex;

@@ -13,6 +13,7 @@ import {
 } from "@/features/recipes/actions";
 import { createRecipeShareAction } from "@/features/shares/actions";
 import { getRecipeDetail } from "@/features/recipes/data";
+import { getCurrentOwnerTokenHash } from "@/features/owners/server";
 import { paths } from "@/lib/paths";
 import { prisma } from "@/lib/db";
 import { ArrowLeft, BookOpen, Trash2 } from "lucide-react";
@@ -27,9 +28,15 @@ export default async function RecipeDetailPage({
   params
 }: RecipeDetailPageProps) {
   const { id, recipeId } = await params;
+  const ownerTokenHash = await getCurrentOwnerTokenHash();
   const recipe = await getRecipeDetail(recipeId);
 
-  if (!recipe || recipe.kitchenId !== id) {
+  if (
+    !recipe ||
+    recipe.kitchenId !== id ||
+    !ownerTokenHash ||
+    recipe.kitchen.ownerTokenHash !== ownerTokenHash
+  ) {
     notFound();
   }
 

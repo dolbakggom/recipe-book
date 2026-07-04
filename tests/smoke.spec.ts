@@ -11,9 +11,13 @@ test("core local MVP flow", async ({ page }, testInfo) => {
   const recipeName = `스모크 레시피 ${runId}`;
 
   try {
-    await page.goto("/kitchens");
+    await page.goto("/");
 
+    await expect(page.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "공유 주방 접속" })).toBeVisible();
     await expect(page.getByRole("link", { name: "식재료" })).toHaveCount(0);
+    await page.getByRole("link", { name: "주방 만들기" }).click();
+
     await page.getByLabel("주방 이름").fill(kitchenName);
     await page.getByLabel("설명").fill("스모크 테스트 레시피 공간");
     await page.getByRole("button", { name: "주방 만들기" }).click();
