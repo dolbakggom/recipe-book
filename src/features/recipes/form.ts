@@ -3,6 +3,7 @@ import type { AiRecipeSuggestion } from "@/features/ai/recipe";
 import type { RecipeInput } from "./data";
 import { prisma } from "@/lib/db";
 import { formValue, orderedValues } from "@/lib/form";
+import { recipeDraftFingerprint } from "./source-fingerprint";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -44,7 +45,10 @@ export async function recipeInputFromFormData(
   const markdownContent = fieldValueIgnoringStaleAi(
     formData,
     "markdownContent",
-    staleAiPayload?.markdownContent
+    staleAiPayload?.markdownContent,
+    staleAiPayload
+      ? formValue(formData, "aiMarkdownFingerprint").trim()
+      : undefined
   );
   const summary = await summarizeRawTextIfNeeded({
     rawText,
@@ -266,17 +270,40 @@ function isAiPayloadStale(formData: FormData, rawText: string) {
     return false;
   }
 
-  return formValue(formData, "aiSourceText").trim() !== trimmedRawText;
+  const sourceFingerprint = formValue(
+    formData,
+    "aiSourceFingerprint"
+  ).trim();
+
+  if (sourceFingerprint) {
+    return sourceFingerprint !== recipeDraftFingerprint(trimmedRawText);
+  }
+
+  const sourceText = formValue(formData, "aiSourceText").trim();
+
+  if (sourceText) {
+    return sourceText !== trimmedRawText;
+  }
+
+  return true;
 }
 
 function fieldValueIgnoringStaleAi(
   formData: FormData,
   fieldName: string,
-  staleAiValue: string | undefined
+  staleAiValue: string | undefined,
+  staleAiFingerprint?: string
 ) {
   const value = formValue(formData, fieldName);
 
   if (staleAiValue !== undefined && value.trim() === staleAiValue.trim()) {
+    return "";
+  }
+
+  if (
+    staleAiFingerprint &&
+    recipeDraftFingerprint(value) === staleAiFingerprint
+  ) {
     return "";
   }
 

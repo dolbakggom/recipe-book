@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { useState, useTransition } from "react";
 import type { AiRecipeSuggestion } from "@/features/ai/recipe";
 import { summarizeRecipeDraftAction } from "@/features/ai/actions";
+import { recipeDraftFingerprint } from "@/features/recipes/source-fingerprint";
 
 export function AiRecipeAssistant({
   initialDraft = ""
@@ -12,18 +13,22 @@ export function AiRecipeAssistant({
 }) {
   const [draft, setDraft] = useState(initialDraft);
   const [suggestion, setSuggestion] = useState<AiRecipeSuggestion | null>(null);
+  const [suggestionSourceFingerprint, setSuggestionSourceFingerprint] =
+    useState("");
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function runAi() {
     setError("");
+    const sourceText = draft;
 
     startTransition(async () => {
-      const result = await summarizeRecipeDraftAction(draft);
+      const result = await summarizeRecipeDraftAction(sourceText);
 
       if (result.ok) {
         applySuggestionToForm(result.recipe);
         setSuggestion(result.recipe);
+        setSuggestionSourceFingerprint(recipeDraftFingerprint(sourceText));
       } else {
         setError(result.error);
       }
@@ -67,7 +72,10 @@ export function AiRecipeAssistant({
 
       {suggestion && (
         <div className="ai-result">
-          <AiResultHiddenFields sourceText={draft} suggestion={suggestion} />
+          <AiResultHiddenFields
+            sourceFingerprint={suggestionSourceFingerprint}
+            suggestion={suggestion}
+          />
           <div className="ai-result-summary">
             <div>
               <span className="muted">제목</span>
@@ -154,22 +162,26 @@ function setFormFieldValue(id: string, value: string) {
 }
 
 function AiResultHiddenFields({
-  sourceText,
+  sourceFingerprint,
   suggestion
 }: {
-  sourceText: string;
+  sourceFingerprint: string;
   suggestion: AiRecipeSuggestion;
 }) {
   return (
     <>
       <input name="aiResultActive" type="hidden" value="1" />
-      <input name="aiSourceText" type="hidden" value={sourceText} />
+      <input
+        name="aiSourceFingerprint"
+        type="hidden"
+        value={sourceFingerprint}
+      />
       <input name="aiTitle" type="hidden" value={suggestion.title} />
       <input name="aiDescription" type="hidden" value={suggestion.description} />
       <input
-        name="aiMarkdownContent"
+        name="aiMarkdownFingerprint"
         type="hidden"
-        value={suggestion.markdownContent}
+        value={recipeDraftFingerprint(suggestion.markdownContent)}
       />
       {suggestion.ingredients.map((ingredient, index) => (
         <span aria-hidden="true" key={`${ingredient.name}-${index}`}>

@@ -152,14 +152,61 @@ describe("AI recipe form input", () => {
     });
   });
 
+  it("accepts fresh AI fields with a compact source fingerprint", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Compact AI Kitchen" }, db);
+      const rawRecipeText =
+        "생크림을 넣고 크림 소스를 만든 뒤 삶은 파스타면과 섞는다.";
+      const formData = new FormData();
+
+      formData.set("kitchenId", kitchen.id);
+      formData.set("rawRecipeText", rawRecipeText);
+      formData.set("aiSourceFingerprint", draftFingerprint(rawRecipeText));
+      formData.set("title", "크림 파스타");
+      formData.set("aiTitle", "크림 파스타");
+      formData.set("description", "생크림으로 만드는 파스타");
+      formData.set("aiDescription", "생크림으로 만드는 파스타");
+      formData.set(
+        "markdownContent",
+        "# 크림 파스타\n\n## 재료\n- 생크림 200ml"
+      );
+      formData.set(
+        "aiMarkdownFingerprint",
+        draftFingerprint("# 크림 파스타\n\n## 재료\n- 생크림 200ml")
+      );
+      formData.append("aiIngredientName", "생크림");
+      formData.append("aiAmount", "200");
+      formData.append("aiUnit", "ml");
+      formData.append("aiNote", "");
+
+      const input = await recipeInputFromFormData(
+        formData,
+        null,
+        db,
+        async () => {
+          throw new Error("fresh AI payload should not be summarized again");
+        }
+      );
+      const recipe = await createRecipe(input, db);
+      const detail = await getRecipeDetail(recipe.id, db);
+
+      expect(input.title).toBe("크림 파스타");
+      expect(input.markdownContent).toContain("생크림");
+      expect(detail?.recipeIngredients.map((item) => item.ingredient.name)).toEqual([
+        "생크림"
+      ]);
+    });
+  });
+
   it("ignores stale AI fields when the raw recipe text changed after analysis", async () => {
     await withTestDb(async (db) => {
       const kitchen = await createKitchen({ name: "Stale AI Kitchen" }, db);
       const formData = new FormData();
+      const previousText = "생크림을 넣고 크림 소스를 만든다.";
 
       formData.set("kitchenId", kitchen.id);
       formData.set("rawRecipeText", "토마토를 으깨고 바질을 넣어 소스를 만든다.");
-      formData.set("aiSourceText", "생크림을 넣고 크림 소스를 만든다.");
+      formData.set("aiSourceFingerprint", draftFingerprint(previousText));
       formData.set("title", "크림 소스");
       formData.set("aiTitle", "크림 소스");
       formData.set("markdownContent", "# 크림 소스\n\n## 재료\n- 생크림");
@@ -214,4 +261,76 @@ describe("AI recipe form input", () => {
       ]);
     });
   });
+
+  it("ignores stale generated markdown with a compact markdown fingerprint", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Stale Markdown Kitchen" }, db);
+      const previousText = "생크림을 넣고 크림 소스를 만든다.";
+      const staleMarkdown = "# 크림 소스\n\n## 재료\n- 생크림";
+      const formData = new FormData();
+
+      formData.set("kitchenId", kitchen.id);
+      formData.set("rawRecipeText", "토마토를 으깨고 바질을 넣어 소스를 만든다.");
+      formData.set("aiSourceFingerprint", draftFingerprint(previousText));
+      formData.set("title", "크림 소스");
+      formData.set("aiTitle", "크림 소스");
+      formData.set("markdownContent", staleMarkdown);
+      formData.set("aiMarkdownFingerprint", draftFingerprint(staleMarkdown));
+      formData.append("aiIngredientName", "생크림");
+      formData.append("aiAmount", "200");
+      formData.append("aiUnit", "ml");
+      formData.append("aiNote", "");
+
+      const input = await recipeInputFromFormData(
+        formData,
+        null,
+        db,
+        async (rawText) => {
+          expect(rawText).toContain("토마토");
+          return {
+            title: "토마토 바질 소스",
+            description: "토마토와 바질로 만드는 소스",
+            markdownContent:
+              "# 토마토 바질 소스\n\n## 재료\n- 토마토 2개\n- 바질 약간",
+            ingredients: [
+              {
+                name: "토마토",
+                amount: "2",
+                unit: "개",
+                note: ""
+              },
+              {
+                name: "바질",
+                amount: "",
+                unit: "약간",
+                note: ""
+              }
+            ],
+            steps: [
+              {
+                title: "소스 만들기",
+                description: "토마토를 으깨고 바질을 넣는다."
+              }
+            ]
+          };
+        }
+      );
+
+      expect(input.title).toBe("토마토 바질 소스");
+      expect(input.markdownContent).toContain("토마토");
+      expect(input.markdownContent).not.toContain("생크림");
+    });
+  });
 });
+
+function draftFingerprint(value: string) {
+  const normalized = value.trim();
+  let hash = 2166136261;
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    hash ^= normalized.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return `${normalized.length.toString(36)}-${(hash >>> 0).toString(36)}`;
+}
