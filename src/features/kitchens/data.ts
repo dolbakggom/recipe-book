@@ -77,27 +77,6 @@ export async function listKitchensForOwner(
   });
 }
 
-export async function getKitchen(id: string, db: Db = prisma) {
-  return db.kitchen.findUnique({
-    where: { id },
-    include: {
-      recipes: {
-        orderBy: [{ updatedAt: "desc" }],
-        include: {
-          recipeIngredients: {
-            take: 4,
-            orderBy: { order: "asc" },
-            include: { ingredient: true }
-          }
-        }
-      },
-      ingredients: {
-        orderBy: { name: "asc" }
-      }
-    }
-  });
-}
-
 export async function getKitchenForOwner(
   id: string,
   ownerTokenHash: string | null,

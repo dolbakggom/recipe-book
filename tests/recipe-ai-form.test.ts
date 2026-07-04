@@ -151,4 +151,67 @@ describe("AI recipe form input", () => {
       expect(detail?.steps.map((step) => step.title)).toEqual(["소스 만들기"]);
     });
   });
+
+  it("ignores stale AI fields when the raw recipe text changed after analysis", async () => {
+    await withTestDb(async (db) => {
+      const kitchen = await createKitchen({ name: "Stale AI Kitchen" }, db);
+      const formData = new FormData();
+
+      formData.set("kitchenId", kitchen.id);
+      formData.set("rawRecipeText", "토마토를 으깨고 바질을 넣어 소스를 만든다.");
+      formData.set("aiSourceText", "생크림을 넣고 크림 소스를 만든다.");
+      formData.set("title", "크림 소스");
+      formData.set("aiTitle", "크림 소스");
+      formData.set("markdownContent", "# 크림 소스\n\n## 재료\n- 생크림");
+      formData.set("aiMarkdownContent", "# 크림 소스\n\n## 재료\n- 생크림");
+      formData.append("aiIngredientName", "생크림");
+      formData.append("aiAmount", "200");
+      formData.append("aiUnit", "ml");
+      formData.append("aiNote", "");
+
+      const input = await recipeInputFromFormData(
+        formData,
+        null,
+        db,
+        async (rawText) => {
+          expect(rawText).toContain("토마토");
+          return {
+            title: "토마토 바질 소스",
+            description: "토마토와 바질로 만드는 소스",
+            markdownContent:
+              "# 토마토 바질 소스\n\n## 재료\n- 토마토 2개\n- 바질 약간",
+            ingredients: [
+              {
+                name: "토마토",
+                amount: "2",
+                unit: "개",
+                note: ""
+              },
+              {
+                name: "바질",
+                amount: "",
+                unit: "약간",
+                note: ""
+              }
+            ],
+            steps: [
+              {
+                title: "소스 만들기",
+                description: "토마토를 으깨고 바질을 넣는다."
+              }
+            ]
+          };
+        }
+      );
+      const recipe = await createRecipe(input, db);
+      const detail = await getRecipeDetail(recipe.id, db);
+
+      expect(input.title).toBe("토마토 바질 소스");
+      expect(input.markdownContent).toContain("토마토");
+      expect(detail?.recipeIngredients.map((item) => item.ingredient.name)).toEqual([
+        "토마토",
+        "바질"
+      ]);
+    });
+  });
 });

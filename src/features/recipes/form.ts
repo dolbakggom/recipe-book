@@ -19,6 +19,7 @@ type StepRow = {
 };
 
 type RecipeDraftSummarizer = (rawText: string) => Promise<AiRecipeSuggestion>;
+type AiPayload = AiRecipeSuggestion;
 
 export async function recipeInputFromFormData(
   formData: FormData,
@@ -27,34 +28,58 @@ export async function recipeInputFromFormData(
   summarizeDraft?: RecipeDraftSummarizer
 ): Promise<RecipeInput> {
   const kitchenId = formValue(formData, "kitchenId");
-  const summary = await summarizeRawTextIfNeeded(formData, summarizeDraft);
-  const ingredients = await ingredientRowsFromFormData(
+  const rawText = formValue(formData, "rawRecipeText");
+  const staleAiPayload = staleAiPayloadFromFormData(formData, rawText);
+  const aiPayload = aiPayloadFromFormData(formData, rawText);
+  const title = fieldValueIgnoringStaleAi(
     formData,
+    "title",
+    staleAiPayload?.title
+  );
+  const description = fieldValueIgnoringStaleAi(
+    formData,
+    "description",
+    staleAiPayload?.description
+  );
+  const markdownContent = fieldValueIgnoringStaleAi(
+    formData,
+    "markdownContent",
+    staleAiPayload?.markdownContent
+  );
+  const summary = await summarizeRawTextIfNeeded({
+    rawText,
+    title,
+    markdownContent,
+    hasFreshAiPayload: Boolean(aiPayload),
+    hasStaleAiPayload: Boolean(staleAiPayload),
+    summarizeDraft
+  });
+  const ingredients = await ingredientRowsFromFormData(
     kitchenId,
     db,
+    aiPayload,
     summary
   );
-  const steps = stepRowsFromFormData(formData, summary);
-  const rawText = formValue(formData, "rawRecipeText");
+  const steps = stepRowsFromFormData(formData, aiPayload, summary);
 
   return {
     kitchenId,
     title: firstFilled(
-      formValue(formData, "title"),
-      formValue(formData, "aiTitle"),
+      title,
       summary?.title ?? "",
+      aiPayload?.title ?? "",
       fallbackTitleFromRawText(rawText)
     ),
     description: firstFilled(
-      formValue(formData, "description"),
-      formValue(formData, "aiDescription"),
-      summary?.description ?? ""
+      description,
+      summary?.description ?? "",
+      aiPayload?.description ?? ""
     ),
     coverImage: imagePath,
     markdownContent: firstFilled(
-      formValue(formData, "markdownContent"),
-      formValue(formData, "aiMarkdownContent"),
+      markdownContent,
       summary?.markdownContent ?? "",
+      aiPayload?.markdownContent ?? "",
       rawText
     ),
     ingredients: dedupeIngredientRows(ingredients).map((ingredient, index) => ({
@@ -71,12 +96,12 @@ export async function recipeInputFromFormData(
 }
 
 async function ingredientRowsFromFormData(
-  formData: FormData,
   kitchenId: string,
   db: Db,
+  aiPayload: AiPayload | null,
   summary: AiRecipeSuggestion | null
 ): Promise<IngredientRow[]> {
-  const ingredients = summary?.ingredients ?? ingredientInputsFromFormData(formData);
+  const ingredients = summary?.ingredients ?? aiPayload?.ingredients ?? [];
   const rows: IngredientRow[] = [];
 
   for (const ingredientInput of ingredients) {
@@ -127,10 +152,15 @@ function ingredientInputsFromFormData(formData: FormData) {
 
 function stepRowsFromFormData(
   formData: FormData,
+  aiPayload: AiPayload | null,
   summary: AiRecipeSuggestion | null
 ): StepRow[] {
   if (summary) {
     return summary.steps;
+  }
+
+  if (aiPayload) {
+    return aiPayload.steps;
   }
 
   const titles = orderedValues(formData, "aiStepTitle");
@@ -143,36 +173,114 @@ function stepRowsFromFormData(
 }
 
 async function summarizeRawTextIfNeeded(
-  formData: FormData,
-  summarizeDraft?: RecipeDraftSummarizer
+  input: {
+    rawText: string;
+    title: string;
+    markdownContent: string;
+    hasFreshAiPayload: boolean;
+    hasStaleAiPayload: boolean;
+    summarizeDraft?: RecipeDraftSummarizer;
+  }
 ) {
-  if (!summarizeDraft) {
+  if (!input.summarizeDraft) {
     return null;
   }
 
-  const rawText = formValue(formData, "rawRecipeText");
-
-  if (!rawText.trim() || hasAiResultPayload(formData)) {
+  if (!input.rawText.trim() || input.hasFreshAiPayload) {
     return null;
   }
 
-  const title = formValue(formData, "title");
-  const markdownContent = formValue(formData, "markdownContent");
-
-  if (title.trim() && markdownContent.trim()) {
+  if (
+    !input.hasStaleAiPayload &&
+    input.title.trim() &&
+    input.markdownContent.trim()
+  ) {
     return null;
   }
 
-  return summarizeDraft(rawText);
+  return input.summarizeDraft(input.rawText);
 }
 
-function hasAiResultPayload(formData: FormData) {
-  return Boolean(
+function aiPayloadFromFormData(formData: FormData, rawText: string) {
+  const payload = aiPayloadValuesFromFormData(formData);
+
+  if (!payload || isAiPayloadStale(formData, rawText)) {
+    return null;
+  }
+
+  return payload;
+}
+
+function staleAiPayloadFromFormData(formData: FormData, rawText: string) {
+  const payload = aiPayloadValuesFromFormData(formData);
+
+  if (!payload || !isAiPayloadStale(formData, rawText)) {
+    return null;
+  }
+
+  return payload;
+}
+
+function aiPayloadValuesFromFormData(formData: FormData): AiPayload | null {
+  const ingredients = ingredientInputsFromFormData(formData);
+  const steps = aiStepRowsFromFormData(formData);
+  const title = formValue(formData, "aiTitle");
+  const description = formValue(formData, "aiDescription");
+  const markdownContent = formValue(formData, "aiMarkdownContent");
+  const hasPayload = Boolean(
     formValue(formData, "aiResultActive").trim() ||
-      formValue(formData, "aiTitle").trim() ||
-      formValue(formData, "aiMarkdownContent").trim() ||
-      orderedValues(formData, "aiIngredientName").some((name) => name.trim())
+      title.trim() ||
+      description.trim() ||
+      markdownContent.trim() ||
+      ingredients.some((ingredient) => ingredient.name.trim()) ||
+      steps.some((step) => step.title.trim() || step.description.trim())
   );
+
+  if (!hasPayload) {
+    return null;
+  }
+
+  return {
+    title,
+    description,
+    markdownContent,
+    ingredients,
+    steps
+  };
+}
+
+function aiStepRowsFromFormData(formData: FormData): StepRow[] {
+  const titles = orderedValues(formData, "aiStepTitle");
+  const descriptions = orderedValues(formData, "aiStepDescription");
+
+  return titles.map((title, index) => ({
+    title,
+    description: valueAt(descriptions, index)
+  }));
+}
+
+function isAiPayloadStale(formData: FormData, rawText: string) {
+  const trimmedRawText = rawText.trim();
+
+  if (!trimmedRawText) {
+    return false;
+  }
+
+  return formValue(formData, "aiSourceText").trim() !== trimmedRawText;
+}
+
+function fieldValueIgnoringStaleAi(
+  formData: FormData,
+  fieldName: string,
+  staleAiValue: string | undefined
+) {
+  const value = formValue(formData, fieldName);
+
+  if (staleAiValue !== undefined && value.trim() === staleAiValue.trim()) {
+    return "";
+  }
+
+  return value;
 }
 
 function dedupeIngredientRows(rows: IngredientRow[]) {

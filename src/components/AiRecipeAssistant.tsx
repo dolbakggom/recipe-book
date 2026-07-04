@@ -67,7 +67,7 @@ export function AiRecipeAssistant({
 
       {suggestion && (
         <div className="ai-result">
-          <AiResultHiddenFields suggestion={suggestion} />
+          <AiResultHiddenFields sourceText={draft} suggestion={suggestion} />
           <div className="ai-result-summary">
             <div>
               <span className="muted">제목</span>
@@ -154,13 +154,16 @@ function setFormFieldValue(id: string, value: string) {
 }
 
 function AiResultHiddenFields({
+  sourceText,
   suggestion
 }: {
+  sourceText: string;
   suggestion: AiRecipeSuggestion;
 }) {
   return (
     <>
       <input name="aiResultActive" type="hidden" value="1" />
+      <input name="aiSourceText" type="hidden" value={sourceText} />
       <input name="aiTitle" type="hidden" value={suggestion.title} />
       <input name="aiDescription" type="hidden" value={suggestion.description} />
       <input

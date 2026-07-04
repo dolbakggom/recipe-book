@@ -40,20 +40,6 @@ const recipeInputSchema = z.object({
 
 export type RecipeInput = z.input<typeof recipeInputSchema>;
 
-export async function listRecipesForKitchen(kitchenId: string, db: Db = prisma) {
-  return db.recipe.findMany({
-    where: { kitchenId },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      recipeIngredients: {
-        take: 4,
-        orderBy: { order: "asc" },
-        include: { ingredient: true }
-      }
-    }
-  });
-}
-
 export async function getRecipeDetail(id: string, db: Db = prisma) {
   return db.recipe.findUnique({
     where: { id },
